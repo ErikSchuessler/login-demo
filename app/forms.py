@@ -25,3 +25,8 @@ class ChangePasswordForm(FlaskForm):
     new_pass = PasswordField('New password', validators=[DataRequired()])
     new_pass_retype = PasswordField('Retype new password', validators=[DataRequired()])
     submit = SubmitField('Change password')
+
+class AddUserForm(FlaskForm):
+    username = StringField('Username:', validators=[DataRequired()])
+    password = PasswordField('Password:', validators=[DataRequired()])
+    submit = SubmitField('Add User')

@@ -1,7 +1,7 @@
 from app import app
 from flask import render_template, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
-from app.forms import AddForm, DeleteForm, SearchForm, LoginForm, ChangePasswordForm
+from app.forms import AddForm, DeleteForm, SearchForm, LoginForm, ChangePasswordForm, AddUserForm
 from app import db
 from app.models import City, User
 import sys
@@ -33,13 +33,20 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
-@app.route('/change_password')
+@app.route('/change_password', methods=['GET','POST'])
+@login_required
 def change_password():
     form = ChangePasswordForm()
-    '''
-    Implement this function for Activity 9.
-    Verify that old password matches and the new password and retype also match.
-    '''
+    if form.validate_on_submit():
+        user = db.session.query(User).filter_by(username=current_user.username).first()
+        if user.check_password(form.old_pass.data) and form.new_pass.data == form.new_pass_retype.data:
+            user.set_password(form.new_pass.data)
+            db.session.commit()
+            print("Password change successful", file=sys.stdout)
+        else:
+            print("Password change failed", file=sys.stdou)
+        return redirect(url_for('index'))
+    
     return render_template('change_password.html', form = form)
 
 def is_admin():
@@ -128,3 +135,34 @@ def sort_by_name():
     all = db.session.query(City).order_by(City.city).all()
     print(all, file=sys.stderr)
     return render_template('view_cities.html', cities=all)
+
+@app.route('/add_user', methods=['GET','POST'])
+def addUser():
+    if is_admin():
+        form = AddUserForm()
+        if form.validate_on_submit():
+            #checks if username being created already exists
+            duplicateUser = db.session.query(User).filter_by(username = form.username.data).all()
+            if duplicateUser:
+                #if it exists, load error page
+                return render_template('user_already_exists.html')
+            else:
+                #if it doesn't exist, create the user
+                username = form.username.data
+                password = form.password.data
+
+                reg_user = User(username=username, role = 'user')
+                reg_user.set_password(password)
+                db.session.add(reg_user)
+                db.session.commit()
+        return render_template('add_user.html', form = form)        
+    else:
+        return render_template('unauthorized.html')
+    
+
+
+            
+
+
+
+
